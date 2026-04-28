@@ -1,0 +1,111 @@
+﻿@page
+@model FitNova.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Admin";
+    Layout = "_Layout";
+}
+
+<div class="topbar">
+    <div class="topbar-title">Pannello <span style="color:#a78bfa">Admin</span> ⚙️</div>
+    <div class="topbar-user">
+        <span class="badge-nova badge-admin">Nutrizionista</span>
+    </div>
+</div>
+
+<!-- STATS TOP -->
+<div class="grid-4" style="margin-bottom:24px;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(139,92,246,0.1);">👥</div>
+        <div class="stat-info">
+            <div class="stat-num" style="color:#a78bfa;">@Model.TotalUsers</div>
+            <div class="stat-name">Utenti totali</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">📊</div>
+        <div class="stat-info">
+            <div class="stat-num card-accent">@Model.ProfilesCompleted</div>
+            <div class="stat-name">Profili completati</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue">🥗</div>
+        <div class="stat-info">
+            <div class="stat-num card-blue">@Model.TodayFoodLogs</div>
+            <div class="stat-name">Log cibo oggi</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">🏋️</div>
+        <div class="stat-info">
+            <div class="stat-num card-orange">@Model.TodayWorkouts</div>
+            <div class="stat-name">Allenamenti oggi</div>
+        </div>
+    </div>
+</div>
+
+<!-- USER TABLE -->
+<div class="card-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="card-label" style="margin-bottom:0;">Tutti gli Utenti</div>
+        <div style="font-size:12px;color:var(--text-muted);">@Model.TotalUsers utenti registrati</div>
+    </div>
+
+    <table class="nova-table">
+        <thead>
+            <tr>
+                <th>Utente</th>
+                <th>Peso</th>
+                <th>Altezza</th>
+                <th>Età</th>
+                <th>Obiettivo</th>
+                <th>Cal. Oggi</th>
+                <th>Workout Sett.</th>
+                <th>Ruolo</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in Model.UserStats)
+            {
+                <tr>
+                    <td>
+                        <div style="font-size:13px;color:var(--text);">@u.Email</div>
+                    </td>
+                    <td>@(u.WeightKg > 0 ? u.WeightKg + " kg" : "—")</td>
+                    <td>@(u.HeightCm > 0 ? u.HeightCm + " cm" : "—")</td>
+                    <td>@(u.Age > 0 ? u.Age.ToString() : "—")</td>
+                    <td>
+                        @if (!string.IsNullOrEmpty(u.Goal))
+                        {
+                            var goalIcon = u.Goal switch { "lose" => "🔥", "gain" => "💪", _ => "⚖️" };
+                            var goalLabel = u.Goal switch { "lose" => "Perdita peso", "gain" => "Massa", _ => "Mantenimento" };
+                            <span>@goalIcon @goalLabel</span>
+                        }
+                        else
+                        {
+                            <span style="color:var(--text-muted)">—</span>
+                        }
+                    </td>
+                    <td>
+                        @if (u.TodayCalories > 0)
+                        {
+                            <span class="card-accent" style="font-family:'Syne',sans-serif;font-weight:700;">@((int)u.TodayCalories) kcal</span>
+                        }
+                        else
+                        {
+                            <span style="color:var(--text-muted)">—</span>
+                        }
+                    </td>
+                    <td>
+                        <span style="font-family:'Syne',sans-serif;font-weight:700;color:var(--accent3);">@u.WorkoutsThisWeek</span>
+                    </td>
+                    <td>
+                        <span class="badge-nova @(u.IsAdmin ? "badge-admin" : "badge-user")">
+                            @(u.IsAdmin ? "Admin" : "User")
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

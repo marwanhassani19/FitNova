@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35818.85
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FitNova", "FitNova\FitNova.csproj", "{FE01AC20-6A31-4ED7-9335-AAD966C42AC8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FE01AC20-6A31-4ED7-9335-AAD966C42AC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE01AC20-6A31-4ED7-9335-AAD966C42AC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE01AC20-6A31-4ED7-9335-AAD966C42AC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE01AC20-6A31-4ED7-9335-AAD966C42AC8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F990ADA0-AEB2-44B4-A52B-562F11BC191E}
+	EndGlobalSection
+EndGlobal

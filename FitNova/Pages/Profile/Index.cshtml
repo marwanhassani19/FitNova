@@ -1,0 +1,145 @@
+﻿@page
+@model FitNova.Pages.Profile.IndexModel
+@{
+    ViewData["Title"] = "Profilo";
+}
+
+@{
+    var bmi = (Model.Profile?.HeightCm ?? 0) > 0
+      ? Model.Profile!.WeightKg / MathF.Pow(Model.Profile.HeightCm / 100f, 2) : 0f;
+    var bmiLabel = bmi < 18.5f ? "Sottopeso" : bmi < 25f ? "Normopeso" : bmi < 30f ? "Sovrappeso" : bmi > 0 ? "Obesità" : "—";
+    var bmiColor = bmi < 18.5f ? "var(--blue)" : bmi < 25f ? "var(--green)" : bmi < 30f ? "var(--orange)" : bmi > 0 ? "var(--red)" : "var(--text-2)";
+    var bmiPct = bmi > 0 ? (float)Math.Min(100, Math.Max(0, (bmi - 15) / 25 * 100)) : 50f;
+}
+
+<div class="page-top">
+    <div>
+        <div class="page-title">Il Mio Profilo 👤</div>
+        <div class="page-subtitle">Gestisci i tuoi dati e genera il piano nutrizionale AI</div>
+    </div>
+</div>
+
+<div class="g2 mb24" style="align-items:start;">
+
+    <!-- FORM PROFILO -->
+    <div>
+        <div class="card mb16">
+            <div class="card-title">Dati Fisici</div>
+
+            @foreach (var e in ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <div class="form-error">⚠️ @e.ErrorMessage</div>
+            }
+
+            <form method="post">
+                <div class="g2" style="gap:12px;">
+                    <div class="form-group">
+                        <label class="form-label">Peso (kg)</label>
+                        <input asp-for="Input.WeightKg" class="form-control" type="number" step="0.1" placeholder="Es: 72.5" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Altezza (cm)</label>
+                        <input asp-for="Input.HeightCm" class="form-control" type="number" placeholder="Es: 178" />
+                    </div>
+                </div>
+                <div class="g2" style="gap:12px;">
+                    <div class="form-group">
+                        <label class="form-label">Età</label>
+                        <input asp-for="Input.Age" class="form-control" type="number" placeholder="Es: 25" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sesso</label>
+                        <select asp-for="Input.Gender" class="form-control">
+                            <option value="male">👨 Maschio</option>
+                            <option value="female">👩 Femmina</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Obiettivo</label>
+                    <select asp-for="Input.Goal" class="form-control">
+                        <option value="lose">🔥 Perdere peso</option>
+                        <option value="maintain">⚖️ Mantenere il peso</option>
+                        <option value="gain">💪 Aumentare massa muscolare</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Livello di Attività</label>
+                    <select asp-for="Input.ActivityLevel" class="form-control">
+                        <option value="sedentary">🛋️ Sedentario</option>
+                        <option value="light">🚶 Leggermente attivo (1-3 gg/sett)</option>
+                        <option value="moderate">🏃 Moderatamente attivo (3-5 gg/sett)</option>
+                        <option value="active">🏋️ Molto attivo (6-7 gg/sett)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">💾 Salva Profilo</button>
+            </form>
+        </div>
+
+        @if (bmi > 0)
+        {
+            <div class="card">
+                <div class="card-title">Indice di Massa Corporea (BMI)</div>
+                <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;">
+                    <span style="font-size:40px;font-weight:800;color:@bmiColor;letter-spacing:-1px;">@bmi.ToString("F1")</span>
+                    <span style="font-size:14px;font-weight:600;color:@bmiColor;">@bmiLabel</span>
+                </div>
+                <div class="bmi-bar">
+                    <div class="bmi-marker" style="left:@(bmiPct)%"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-3);margin-top:4px;">
+                    <span>Sottopeso</span><span>Normale</span><span>Sovrappeso</span><span>Obeso</span>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- AI PLAN -->
+    <div class="card" style="height:fit-content;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div class="card-title" style="margin:0;">Piano Nutrizionale AI 🤖</div>
+            @if (!string.IsNullOrEmpty(Model.NutritionPlan))
+            {
+                <form method="post" asp-page-handler="GeneratePlan">
+                    <button type="submit" class="btn btn-ghost btn-sm">🔄 Rigenera</button>
+                </form>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.NutritionPlan))
+        {
+            <div class="plan-output">
+                <div class="plan-output-header">
+                    <span>⚡</span>
+                    <span>Piano generato da Gemini AI</span>
+                    <span style="margin-left:auto;font-size:11px;color:var(--text-2);">
+                        @Model.Profile?.UpdatedAt.ToString("d MMM yyyy", new System.Globalization.CultureInfo("it-IT"))
+                    </span>
+                </div>
+                <div class="plan-output-body">
+                    @Html.Raw(Model.FormattedPlan)
+                </div>
+            </div>
+        }
+        else
+        {
+            <div style="text-align:center;padding:40px 20px;">
+                <div style="font-size:52px;margin-bottom:14px;">🤖</div>
+                <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Nessun piano ancora</div>
+                <p style="font-size:13px;color:var(--text-2);margin-bottom:24px;line-height:1.7;">
+                    Salva il tuo profilo e poi clicca il pulsante. Gemini AI creerà un piano nutrizionale personalizzato con calorie, macros e menu settimanale.
+                </p>
+                <form method="post" asp-page-handler="GeneratePlan">
+                    <button type="submit" class="btn btn-primary btn-lg">⚡ Genera Piano AI</button>
+                </form>
+            </div>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Toast))
+{
+    <div class="toast @(Model.ToastError ? "error" : "")">
+        @(Model.ToastError ? "⚠️" : "✓") @Model.Toast
+    </div>
+}

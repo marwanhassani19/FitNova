@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(ViewData["Title"] != null ? ViewData["Title"] + " — " : "")FitNova</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+
+    @{
+        var page = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+        bool isAdmin = User.IsInRole("Admin");
+        var email = User.Identity?.Name ?? "";
+        var username = email.Contains("@") ? email.Split('@')[0] : email;
+    }
+
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo-mark">⚡</div>
+            <div class="sidebar-logo-text">Fit<span>Nova</span></div>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="sidebar-section">Menu</div>
+            <a href="/Dashboard" class="@(page.Contains("Dashboard") ? "active" : "")">
+                <span class="nav-icon">🏠</span> Dashboard
+            </a>
+            <a href="/Nutrition" class="@(page.Contains("Nutrition") ? "active" : "")">
+                <span class="nav-icon">🥗</span> Nutrizione
+            </a>
+            <a href="/Workout" class="@(page.Contains("Workout") ? "active" : "")">
+                <span class="nav-icon">🏋️</span> Workout
+            </a>
+
+            <div class="sidebar-section" style="margin-top:8px;">Profilo</div>
+            <a href="/Profile" class="@(page.Contains("Profile") ? "active" : "")">
+                <span class="nav-icon">👤</span> Il Mio Profilo
+            </a>
+
+            @if (isAdmin)
+            {
+                <div class="sidebar-section" style="margin-top:8px;">Admin</div>
+                <a href="/Admin" class="@(page.Contains("Admin") ? "active" : "")">
+                    <span class="nav-icon">⚙️</span> Pannello Admin
+                </a>
+            }
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="user-chip" style="margin-bottom:8px;">
+                <div class="user-avatar">🧑</div>
+                <div>
+                    <div class="user-name">@username</div>
+                    <div class="user-role">@(isAdmin ? "Nutrizionista" : "Utente")</div>
+                </div>
+            </div>
+            <form method="post" action="/Account/Logout">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-ghost btn-sm btn-full"
+                        style="justify-content:flex-start;gap:8px;">
+                    <span>🚪</span> Logout
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <main class="content" id="mainContent">
+        @RenderBody()
+    </main>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

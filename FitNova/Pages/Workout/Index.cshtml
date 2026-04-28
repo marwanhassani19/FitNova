@@ -1,0 +1,117 @@
+﻿@page
+@model FitNova.Pages.Workout.IndexModel
+@{
+    ViewData["Title"] = "Workout";
+}
+
+<div class="page-top">
+    <div>
+        <div class="page-title">Workout 🏋️</div>
+        <div class="page-subtitle">
+            Questa settimana: <strong style="color:var(--orange)">@Model.WorkoutsThisWeek allenamenti</strong>
+            • Streak: <strong style="color:var(--green)">@Model.Streak 🔥</strong>
+        </div>
+    </div>
+    <form method="post" asp-page-handler="LogWorkout">
+        <button type="submit" class="btn btn-orange">✓ Segna Allenamento</button>
+    </form>
+</div>
+
+<div class="g2 mb24" style="align-items:start;">
+
+    <!-- AI WORKOUT PLAN -->
+    <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div class="card-title" style="margin:0;">Scheda AI 🤖</div>
+            <form method="post" asp-page-handler="GeneratePlan">
+                <button type="submit" class="btn btn-ghost btn-sm">
+                    @(string.IsNullOrEmpty(Model.WorkoutPlan) ? "⚡ Genera" : "🔄 Rigenera")
+                </button>
+            </form>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.WorkoutPlan))
+        {
+            <div class="plan-output">
+                <div class="plan-output-header" style="color:var(--orange);">
+                    <span>🏋️</span>
+                    <span>Scheda generata da Gemini AI</span>
+                </div>
+                <div class="plan-output-body">
+                    @Html.Raw(Model.FormattedPlan)
+                </div>
+            </div>
+        }
+        else
+        {
+            <div style="text-align:center;padding:40px 20px;">
+                <div style="font-size:52px;margin-bottom:14px;">🏋️</div>
+                <div style="font-size:15px;font-weight:600;margin-bottom:8px;">Nessuna scheda ancora</div>
+                <p style="font-size:13px;color:var(--text-2);margin-bottom:24px;line-height:1.7;">
+                    Genera la tua scheda di allenamento personalizzata basata sul tuo profilo e obiettivi.
+                </p>
+                <form method="post" asp-page-handler="GeneratePlan">
+                    <button type="submit" class="btn btn-orange btn-lg">⚡ Genera Scheda AI</button>
+                </form>
+            </div>
+        }
+    </div>
+
+    <!-- STATS + CALENDAR -->
+    <div>
+        <div class="card mb16">
+            <div class="card-title">Settimana in Corso</div>
+            @{
+                var days = new[] { "Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom" };
+                var todayDow = (((int)DateTime.Today.DayOfWeek + 6) % 7);
+            }
+            <div class="week-grid mb16">
+                @for (int i = 0; i < 7; i++)
+                {
+                    var done = Model.WorkoutDays.Contains(i);
+                    var isToday = i == todayDow;
+                    <div class="week-dot-wrap">
+                        <div class="week-day-lbl">@days[i]</div>
+                        <div class="week-dot @(done ? "done" : isToday ? "today current" : "")">
+                            @(done ? "✓" : isToday ? "●" : "")
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="prog-wrap">
+                <div class="prog-row">
+                    <span>Obiettivo settimanale</span>
+                    <span>@Model.WorkoutsThisWeek / @Model.WeeklyGoal</span>
+                </div>
+                <div class="prog-bg">
+                    <div class="prog-fill pf-orange" style="width:@(Math.Min(100,Model.WorkoutsThisWeek*100/Math.Max(1,Model.WeeklyGoal)))%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="g2" style="gap:12px;">
+            <div class="stat-card">
+                <div class="stat-icon si-orange">🏆</div>
+                <div>
+                    <div class="stat-num c-orange">@Model.TotalWorkouts</div>
+                    <div class="stat-lbl">Allenamenti totali</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon si-green">🔥</div>
+                <div>
+                    <div class="stat-num c-green">@Model.Streak</div>
+                    <div class="stat-lbl">Streak giorni</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Toast))
+{
+    <div class="toast" style="border-color:rgba(249,115,22,.3);color:var(--orange);">
+        ✓ @Model.Toast
+    </div>
+}
