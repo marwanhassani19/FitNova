@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitNova — @(ViewData["Title"] ?? "Dashboard")</title>
+    <link rel="stylesheet" href="/css/site.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+        <div class="sidebar-logo">
+            ⚡ <span>Fit</span>Nova
+        </div>
+
+        <div class="sidebar-section">Main</div>
+        <a href="/Dashboard" class="@(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Dashboard") == true ? "active" : "")">
+            <span class="icon">🏠</span> Dashboard
+        </a>
+        <a href="/Nutrition" class="@(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Nutrition") == true ? "active" : "")">
+            <span class="icon">🥗</span> Nutrizione
+        </a>
+        <a href="/Workout" class="@(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Workout") == true ? "active" : "")">
+            <span class="icon">🏋️</span> Workout
+        </a>
+
+        <div class="sidebar-section">Profilo</div>
+        <a href="/Profile" class="@(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Profile") == true ? "active" : "")">
+            <span class="icon">👤</span> Il Mio Profilo
+        </a>
+
+        @if (User.IsInRole("Admin"))
+        {
+            <div class="sidebar-section">Admin</div>
+            <a href="/Admin" class="@(ViewContext.RouteData.Values["page"]?.ToString()?.Contains("Admin") == true ? "active" : "")">
+                <span class="icon">⚙️</span> Pannello Admin
+            </a>
+        }
+
+        <div class="sidebar-bottom">
+            <form method="post" action="/Account/Logout">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="sidebar-link" style="background:none;border:none;width:100%;text-align:left;cursor:pointer;">
+                    <a href="#" onclick="this.closest('form').submit()" style="color:var(--text-muted);">
+                        <span class="icon">🚪</span> Logout
+                    </a>
+                </button>
+            </form>
+            <div style="font-size:11px;color:var(--text-muted);padding:8px 14px 0;font-family:'Syne',sans-serif;">
+                @User.Identity?.Name
+            </div>
+        </div>
+    </nav>
+
+    <!-- CONTENT -->
+    <main class="content">
+        @RenderBody()
+    </main>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

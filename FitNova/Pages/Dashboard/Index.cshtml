@@ -1,0 +1,171 @@
+﻿@page
+@model FitNova.Pages.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "_Layout";
+    var profile = Model.Profile;
+    var calories = Model.TodayCalories;
+    var calorieGoal = Model.CalorieGoal;
+    var pct = calorieGoal > 0 ? (int)Math.Min(100, calories / calorieGoal * 100) : 0;
+}
+
+<div class="topbar">
+    <div class="topbar-title">
+        Buongiorno <span style="color:var(--accent)">@(User.Identity?.Name?.Split('@')[0])</span> 👋
+    </div>
+    <div class="topbar-user">
+        <span style="color:var(--text-muted);font-size:12px;">@DateTime.Now.ToString("dddd, d MMMM", new System.Globalization.CultureInfo("it-IT"))</span>
+        <div class="avatar">🧑</div>
+    </div>
+</div>
+
+<!-- STAT CARDS -->
+<div class="grid-4" style="margin-bottom:20px;">
+    <div class="stat-card">
+        <div class="stat-icon green">🔥</div>
+        <div class="stat-info">
+            <div class="stat-num card-accent">@calories <span style="font-size:14px;color:var(--text-muted)">/ @calorieGoal</span></div>
+            <div class="stat-name">Calorie oggi</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue">⚖️</div>
+        <div class="stat-info">
+            <div class="stat-num card-blue">@(profile?.WeightKg > 0 ? profile.WeightKg + " kg" : "—")</div>
+            <div class="stat-name">Peso attuale</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">🎯</div>
+        <div class="stat-info">
+            <div class="stat-num card-orange">@(profile?.Goal ?? "—")</div>
+            <div class="stat-name">Obiettivo</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple">💪</div>
+        <div class="stat-info">
+            <div class="stat-num" style="color:#a78bfa;">@Model.WorkoutsThisWeek</div>
+            <div class="stat-name">Workout settimana</div>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-bottom:20px;">
+    <!-- CALORIE PROGRESS -->
+    <div class="card-box">
+        <div class="card-label">Calorie Giornaliere</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px;">
+            <span class="card-value card-accent">@calories</span>
+            <span style="color:var(--text-muted);font-size:14px;">/ @calorieGoal kcal</span>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width:@pct%"></div>
+            </div>
+            <div class="progress-label" style="margin-top:6px;">
+                <span>@pct% del fabbisogno</span>
+                <span>@(calorieGoal - calories) kcal rimanenti</span>
+            </div>
+        </div>
+
+        <!-- MACRO RING -->
+        <div class="ring-chart" style="margin-top:20px;">
+            <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="var(--bg3)" stroke-width="8" />
+                <circle cx="40" cy="40" r="32" fill="none" stroke="var(--accent)" stroke-width="8"
+                        stroke-dasharray="@(Model.ProteinPct * 2.01) 201" stroke-linecap="round" />
+                <circle cx="40" cy="40" r="32" fill="none" stroke="var(--accent2)" stroke-width="8"
+                        stroke-dasharray="@(Model.CarbsPct * 2.01) 201"
+                        stroke-dashoffset="-@(Model.ProteinPct * 2.01)" stroke-linecap="round" />
+                <circle cx="40" cy="40" r="32" fill="none" stroke="var(--accent3)" stroke-width="8"
+                        stroke-dasharray="@(Model.FatPct * 2.01) 201"
+                        stroke-dashoffset="-@((Model.ProteinPct + Model.CarbsPct) * 2.01)" stroke-linecap="round" />
+            </svg>
+            <div class="ring-info">
+                <div class="ring-item">
+                    <div class="ring-dot" style="background:var(--accent)"></div>
+                    <span class="ring-item-name">Proteine</span>
+                    <span class="ring-item-val card-accent">@Model.TodayProtein g</span>
+                </div>
+                <div class="ring-item">
+                    <div class="ring-dot" style="background:var(--accent2)"></div>
+                    <span class="ring-item-name">Carboidrati</span>
+                    <span class="ring-item-val card-blue">@Model.TodayCarbs g</span>
+                </div>
+                <div class="ring-item">
+                    <div class="ring-dot" style="background:var(--accent3)"></div>
+                    <span class="ring-item-name">Grassi</span>
+                    <span class="ring-item-val card-orange">@Model.TodayFat g</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WEIGHT CHART -->
+    <div class="card-box">
+        <div class="card-label">Andamento Peso</div>
+        <canvas id="weightChart" height="180"></canvas>
+    </div>
+</div>
+
+<!-- RECENT FOOD LOG -->
+<div class="card-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="card-label" style="margin-bottom:0;">Diario Alimentare Oggi</div>
+        <a href="/Nutrition" class="btn-nova secondary" style="font-size:12px;padding:6px 14px;">Aggiungi alimento</a>
+    </div>
+
+    @if (Model.TodayLogs.Any())
+    {
+        foreach (var log in Model.TodayLogs.Take(5))
+        {
+            <div class="food-item">
+                <div style="width:36px;height:36px;background:rgba(0,255,136,0.08);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;">🍽️</div>
+                <div class="food-item-name">@log.FoodName</div>
+                <span class="macro-pill macro-p">P: @log.Protein g</span>
+                <span class="macro-pill macro-c">C: @log.Carbs g</span>
+                <span class="macro-pill macro-f">G: @log.Fat g</span>
+                <div class="food-item-cals">@log.Calories kcal</div>
+            </div>
+        }
+    }
+    else
+    {
+        <div style="text-align:center;padding:32px;color:var(--text-muted);font-size:13px;">
+            Nessun alimento registrato oggi.<br>
+            <a href="/Nutrition" class="auth-link">Inizia a tracciare →</a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        const ctx = document.getElementById('weightChart');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeightLabels)),
+                datasets: [{
+                    label: 'Peso (kg)',
+                    data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeightData)),
+                    borderColor: '#00ff88',
+                    backgroundColor: 'rgba(0,255,136,0.05)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#00ff88',
+                    pointRadius: 4,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#5a6070', font: { family: 'JetBrains Mono', size: 11 } } },
+                    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#5a6070', font: { family: 'JetBrains Mono', size: 11 } } }
+                }
+            }
+        });
+    </script>
+}

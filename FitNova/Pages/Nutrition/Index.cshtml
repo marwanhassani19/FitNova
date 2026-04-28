@@ -1,0 +1,303 @@
+﻿@page
+@model FitNova.Pages.Nutrition.IndexModel
+@{
+    ViewData["Title"] = "Nutrizione";
+    Layout = "_Layout";
+}
+
+<div class="topbar">
+    <div class="topbar-title">Nutrizione <span style="color:var(--accent)">🥗</span></div>
+    <div class="topbar-user">
+        <span style="font-size:12px;color:var(--text-muted)">Oggi: <strong style="color:var(--accent)">@Model.TodayCalories kcal</strong></span>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-bottom:20px;align-items:start;">
+
+    <!-- SEARCH + ADD FOOD -->
+    <div class="card-box">
+        <div class="card-label">Aggiungi Alimento</div>
+
+        <!-- TABS -->
+        <div style="display:flex;gap:4px;margin-bottom:16px;background:var(--bg3);padding:4px;border-radius:8px;">
+            <button onclick="switchTab('search')" id="tab-search" class="tab-btn active-tab" style="flex:1;">🔍 Cerca</button>
+            <button onclick="switchTab('barcode')" id="tab-barcode" class="tab-btn" style="flex:1;">📷 Barcode</button>
+            <button onclick="switchTab('ai')" id="tab-ai" class="tab-btn" style="flex:1;">🤖 AI Coach</button>
+        </div>
+
+        <!-- SEARCH PANEL -->
+        <div id="panel-search">
+            <div class="search-wrap">
+                <span class="search-icon">🔍</span>
+                <input id="searchInput" class="form-control-nova" placeholder="Cerca alimento (es: pasta, pollo...)" />
+            </div>
+            <button class="btn-nova primary" onclick="searchFood()" style="width:100%;justify-content:center;">Cerca su OpenFoodFacts</button>
+
+            <div id="searchResults" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- BARCODE PANEL -->
+        <div id="panel-barcode" style="display:none;">
+            <div style="text-align:center;padding:20px;">
+                <div style="font-size:48px;margin-bottom:12px;">📷</div>
+                <p style="color:var(--text-muted);font-size:13px;margin-bottom:16px;">Inserisci il barcode manualmente</p>
+                <input id="barcodeInput" class="form-control-nova" placeholder="Es: 8001120894700" style="margin-bottom:12px;" />
+                <button class="btn-nova primary" onclick="searchBarcode()" style="width:100%;justify-content:center;">Cerca Prodotto</button>
+            </div>
+            <div id="barcodeResult"></div>
+        </div>
+
+        <!-- AI PANEL -->
+        <div id="panel-ai" style="display:none;">
+            <div class="chat-wrap">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-msg">
+                        <div class="chat-avatar ai">🤖</div>
+                        <div class="chat-bubble ai">
+                            Ciao! Dimmi cosa hai mangiato o stai per mangiare e ti aiuto a tracciarlo nel diario. Puoi anche chiedermi consigli nutrizionali! 💪
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-row">
+                    <input id="chatInput" class="form-control-nova" placeholder="Es: ho mangiato una pizza margherita..." onkeydown="if(event.key==='Enter')sendChat()" />
+                    <button class="btn-nova primary" onclick="sendChat()">→</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TODAY'S LOG -->
+    <div class="card-box">
+        <div class="card-label">Diario di Oggi</div>
+
+        <!-- Macro summary -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
+            <div style="text-align:center;padding:10px;background:var(--bg3);border-radius:8px;">
+                <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent);">@Model.TodayProtein<span style="font-size:11px">g</span></div>
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Proteine</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:var(--bg3);border-radius:8px;">
+                <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent2);">@Model.TodayCarbs<span style="font-size:11px">g</span></div>
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Carbo</div>
+            </div>
+            <div style="text-align:center;padding:10px;background:var(--bg3);border-radius:8px;">
+                <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent3);">@Model.TodayFat<span style="font-size:11px">g</span></div>
+                <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Grassi</div>
+            </div>
+        </div>
+
+        @if (Model.Logs.Any())
+        {
+            foreach (var log in Model.Logs)
+            {
+                <div class="food-item">
+                    <div style="width:32px;height:32px;background:rgba(0,255,136,0.06);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;">🍽</div>
+                    <div class="food-item-name">
+                        @log.FoodName
+                        <div style="font-size:11px;color:var(--text-muted);">@log.Quantity × 100g</div>
+                    </div>
+                    <div class="food-item-cals">@((int)(log.Calories * log.Quantity)) kcal</div>
+                    <form method="post" asp-page-handler="DeleteLog">
+                        <input type="hidden" name="logId" value="@log.Id" />
+                        <button type="submit" style="background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;font-size:14px;" title="Rimuovi">✕</button>
+                    </form>
+                </div>
+            }
+        }
+        else
+        {
+            <div style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">
+                Nessun alimento registrato oggi.
+            </div>
+        }
+    </div>
+</div>
+
+<!-- HIDDEN FORM to add food -->
+<form method="post" asp-page-handler="AddFood" id="addFoodForm" style="display:none;">
+    <input type="hidden" name="foodName" id="hFoodName" />
+    <input type="hidden" name="calories" id="hCalories" />
+    <input type="hidden" name="protein" id="hProtein" />
+    <input type="hidden" name="carbs" id="hCarbs" />
+    <input type="hidden" name="fat" id="hFat" />
+    <input type="hidden" name="quantity" id="hQuantity" value="1" />
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        // ── TABS ──
+        function switchTab(name) {
+            ['search', 'barcode', 'ai'].forEach(t => {
+                document.getElementById('panel-' + t).style.display = t === name ? '' : 'none';
+                document.getElementById('tab-' + t).classList.toggle('active-tab', t === name);
+            });
+        }
+
+        async function searchFood() {
+            const query = document.getElementById('foodSearchInput').value;
+            const resultsDiv = document.getElementById('searchResults');
+
+            if (!query) return;
+
+            resultsDiv.innerHTML = "<div style='padding:10px; color:var(--accent)'>🔍 Ricerca in corso...</div>";
+
+            try {
+                // Usiamo l'API ufficiale di ricerca
+                const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=10`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                console.log("Dati ricevuti:", data); // Controlla nella console del browser (F12)
+
+                if (!data.products || data.products.length === 0) {
+                    resultsDiv.innerHTML = "<div style='padding:10px;'>❌ Nessun risultato trovato.</div>";
+                    return;
+                }
+
+                resultsDiv.innerHTML = "";
+                data.products.forEach(p => {
+                    // Prendiamo il nome e le calorie (gestendo i casi in cui mancano)
+                    const name = p.product_name_it || p.product_name || "Alimento sconosciuto";
+                    const cals = p.nutriments ? Math.round(p.nutriments['energy-kcal_100g'] || 0) : 0;
+                    const brand = p.brands ? `(${p.brands})` : "";
+
+                    if (cals > 0) { // Mostriamo solo prodotti con dati calorici
+                        const item = document.createElement('div');
+                        item.className = "search-result-item";
+                        item.style = "padding:12px; border-bottom:1px solid var(--border); cursor:pointer; background:var(--bg2); margin-bottom:4px; border-radius:6px;";
+                        item.innerHTML = `
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <div style="font-weight:bold; color:var(--text);">${name}</div>
+                                    <div style="font-size:11px; color:var(--text-muted);">${brand}</div>
+                                </div>
+                                <div style="color:var(--accent); font-weight:700;">${cals} kcal</div>
+                            </div>
+                        `;
+                        item.onclick = () => addFood(name, cals);
+                        resultsDiv.appendChild(item);
+                    }
+                });
+            } catch (e) {
+                console.error("Errore ricerca:", e);
+                resultsDiv.innerHTML = "<div style='padding:10px; color:#ef4444;'>⚠️ Errore di connessione.</div>";
+            }
+        }
+
+        async function searchBarcode() {
+            const bc = document.getElementById('barcodeInput').value.trim();
+            const res = document.getElementById('barcodeResult');
+            if (!bc) return;
+            res.innerHTML = '<div style="color:var(--text-muted);font-size:13px;padding:8px;">Cerco...</div>';
+            try {
+                const data = await fetch(`https://world.openfoodfacts.org/api/v0/product/${bc}.json`).then(r => r.json());
+                if (data.status === 1) renderResults([data.product], res);
+                else res.innerHTML = '<div style="color:#ef4444;font-size:13px;">Prodotto non trovato.</div>';
+            } catch (e) {
+                res.innerHTML = '<div style="color:#ef4444;font-size:13px;">Errore.</div>';
+            }
+        }
+
+        function renderResults(products, container) {
+            if (!products.length) { container.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Nessun risultato.</div>'; return; }
+            container.innerHTML = products.filter(p => p.product_name).slice(0, 5).map(p => {
+                const n = p.nutriments || {};
+                const cal = Math.round(n['energy-kcal_100g'] || n['energy_100g'] / 4.18 || 0);
+                const pro = Math.round(n.proteins_100g || 0);
+                const car = Math.round(n.carbohydrates_100g || 0);
+                const fat = Math.round(n.fat_100g || 0);
+                const name = p.product_name.substring(0, 40);
+                return `<div onclick="addFood('${name.replace(/'/g, "\\'")}',${cal},${pro},${car},${fat})"
+                    style="cursor:pointer;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;margin-bottom:6px;transition:all .2s;background:var(--bg3);"
+                    onmouseover="this.style.borderColor='var(--accent)';this.style.background='rgba(0,255,136,0.04)'"
+                    onmouseout="this.style.borderColor='var(--border2)';this.style.background='var(--bg3)'">
+                    <div style="font-size:13px;color:var(--text);margin-bottom:4px;">${name}</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <span class="macro-pill macro-p">P:${pro}g</span>
+                        <span class="macro-pill macro-c">C:${car}g</span>
+                        <span class="macro-pill macro-f">G:${fat}g</span>
+                        <span style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--accent);margin-left:auto;">${cal} kcal</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function addFood(name, cal, pro, car, fat) {
+            console.log("Aggiunta alimento:", name, calories);
+            document.getElementById('hFoodName').value = name;
+            document.getElementById('hCalories').value = cal;
+            document.getElementById('hProtein').value = pro;
+            document.getElementById('hCarbs').value = car;
+            document.getElementById('hFat').value = fat;
+            document.getElementById('addFoodForm').submit();
+        }
+
+        // ── AI CHAT ──
+        async function sendChat() {
+            const input = document.getElementById('chatInput');
+            const msg = input.value.trim();
+            if (!msg) return;
+            input.value = '';
+
+            const msgs = document.getElementById('chatMessages');
+
+            // User bubble
+            msgs.innerHTML += `<div class="chat-msg user">
+                <div class="chat-avatar user">🧑</div>
+                <div class="chat-bubble user">${msg}</div>
+            </div>`;
+
+            // Typing
+            const typingId = 'typing_' + Date.now();
+            msgs.innerHTML += `<div class="chat-msg" id="${typingId}">
+                <div class="chat-avatar ai">🤖</div>
+                <div class="chat-bubble ai"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>
+            </div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+
+            try {
+                const res = await fetch('/api/ai-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg })
+                });
+                const data = await res.json();
+                document.getElementById(typingId)?.remove();
+                msgs.innerHTML += `<div class="chat-msg">
+                    <div class="chat-avatar ai">🤖</div>
+                    <div class="chat-bubble ai">${data.reply?.replace(/\n/g, '<br>') || 'Risposta non disponibile.'}</div>
+                </div>`;
+
+                // Se l'AI ha identificato un alimento, aggiungerlo
+                if (data.food) {
+                    addFood(data.food.name, data.food.calories, data.food.protein, data.food.carbs, data.food.fat);
+                }
+            } catch (e) {
+                document.getElementById(typingId)?.remove();
+                msgs.innerHTML += `<div class="chat-msg"><div class="chat-avatar ai">🤖</div><div class="chat-bubble ai">Errore di connessione.</div></div>`;
+            }
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+    </script>
+    <style>
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 8px;
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-family: 'Syne', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .active-tab {
+            background: var(--surface2);
+            color: var(--accent);
+            border: 1px solid var(--border);
+        }
+    </style>
+}

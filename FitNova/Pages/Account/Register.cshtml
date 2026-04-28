@@ -1,0 +1,57 @@
+﻿@page
+@model FitNova.Pages.Account.RegisterModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FitNova — Registrazione</title>
+    <link rel="stylesheet" href="/css/site.css" />
+</head>
+<body class="auth-page">
+    <div style="position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,136,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,0.03) 1px,transparent 1px);background-size:60px 60px;"></div>
+    <div style="position:fixed;width:500px;height:400px;top:-100px;right:-100px;background:radial-gradient(circle,rgba(0,212,255,0.06),transparent 70%);filter:blur(80px);pointer-events:none;border-radius:50%;"></div>
+
+    <div class="auth-card" style="z-index:1;max-width:460px;animation:fadeUp 0.4s ease;">
+        <div class="auth-logo" style="color:var(--accent2);">⚡ FitNova</div>
+        <div class="auth-tagline">Crea il tuo account e inizia il percorso</div>
+
+        @foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+        {
+            <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px;color:#ef4444;">
+                ⚠️ @error.ErrorMessage
+            </div>
+        }
+
+        <form method="post">
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input asp-for="Input.Email" class="form-control-nova" placeholder="tu@email.com" type="email" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input asp-for="Input.Password" class="form-control-nova" placeholder="Min. 6 caratteri" type="password" />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Conferma Password</label>
+                <input asp-for="Input.ConfirmPassword" class="form-control-nova" placeholder="Ripeti password" type="password" />
+            </div>
+
+            <button type="submit" class="btn-nova primary" style="width:100%;justify-content:center;padding:13px;font-size:14px;margin-top:8px;background:var(--accent2);color:#000;">
+                Crea Account →
+            </button>
+        </form>
+
+        <div class="auth-divider"></div>
+
+        <div style="text-align:center;font-size:13px;color:var(--text-muted);">
+            Hai già un account?
+            <a href="/Account/Login" class="auth-link" style="margin-left:6px;">Accedi</a>
+        </div>
+    </div>
+    <style>@@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}</style>
+</body>
+</html>
