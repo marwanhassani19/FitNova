@@ -15,10 +15,7 @@ public class IndexModel : PageModel
     private readonly AppDbContext _db;
 
     public IndexModel(UserManager<ApplicationUser> um, AppDbContext db)
-    {
-        _um = um;
-        _db = db;
-    }
+    { _um = um; _db = db; }
 
     public List<FoodLog> Logs { get; set; } = new();
     public float TodayCalories { get; set; }
@@ -30,8 +27,8 @@ public class IndexModel : PageModel
     {
         var user = await _um.GetUserAsync(User);
         if (user == null) return;
-        var today = DateTime.Today;
 
+        var today = DateTime.Today;
         Logs = await _db.FoodLogs
             .Where(l => l.UserId == user.Id && l.Date.Date == today)
             .Include(l => l.FoodItem)
@@ -44,9 +41,47 @@ public class IndexModel : PageModel
         TodayFat = Logs.Sum(l => (l.FoodItem?.Fat ?? 0) * l.Quantity);
     }
 
+    public async Task<IActionResult> OnGetSearchFoodAsync(string q)
+    {
+        if (string.IsNullOrWhiteSpace(q))
+            return new JsonResult(new { products = Array.Empty<object>() });
+        try
+        {
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.Add("User-Agent", "FitNova/1.0");
+            // Cerca sia in italiano che internazionale
+            var url = $"https://it.openfoodfacts.org/cgi/search.pl?search_terms={Uri.EscapeDataString(q)}&search_simple=1&action=process&json=1&page_size=8";
+            var json = await http.GetStringAsync(url);
+            return Content(json, "application/json");
+        }
+        catch
+        {
+            return new JsonResult(new { products = Array.Empty<object>() });
+        }
+    }
+
+    public async Task<IActionResult> OnGetBarcodeAsync(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+            return new JsonResult(new { status = 0 });
+        try
+        {
+            using var http = new HttpClient();
+            http.DefaultRequestHeaders.Add("User-Agent", "FitNova/1.0");
+            var url = $"https://world.openfoodfacts.org/api/v0/product/{code}.json";
+            var json = await http.GetStringAsync(url);
+            return Content(json, "application/json");
+        }
+        catch
+        {
+            return new JsonResult(new { status = 0 });
+        }
+    }
+
     public async Task<IActionResult> OnPostAddFoodAsync(
-        string foodName, float calories, float protein, float carbs, float fat,
-        float quantity = 1, string mealType = "pranzo")
+        string foodName, float calories, float protein,
+        float carbs, float fat, float quantity = 1,
+        string mealType = "pranzo")
     {
         var user = await _um.GetUserAsync(User);
         if (user == null) return RedirectToPage();
@@ -54,7 +89,14 @@ public class IndexModel : PageModel
         var item = await _db.FoodItems.FirstOrDefaultAsync(f => f.Name == foodName);
         if (item == null)
         {
-            item = new FoodItem { Name = foodName, Calories = calories, Protein = protein, Carbs = carbs, Fat = fat };
+            item = new FoodItem
+            {
+                Name = foodName,
+                Calories = calories,
+                Protein = protein,
+                Carbs = carbs,
+                Fat = fat
+            };
             _db.FoodItems.Add(item);
             await _db.SaveChangesAsync();
         }
@@ -68,7 +110,6 @@ public class IndexModel : PageModel
             Date = DateTime.Now
         });
         await _db.SaveChangesAsync();
-
         return RedirectToPage();
     }
 
@@ -77,28 +118,13 @@ public class IndexModel : PageModel
         var user = await _um.GetUserAsync(User);
         if (user == null) return RedirectToPage();
 
-        var log = await _db.FoodLogs.FirstOrDefaultAsync(l => l.Id == logId && l.UserId == user.Id);
+        var log = await _db.FoodLogs
+            .FirstOrDefaultAsync(l => l.Id == logId && l.UserId == user.Id);
         if (log != null)
         {
             _db.FoodLogs.Remove(log);
             await _db.SaveChangesAsync();
         }
         return RedirectToPage();
-    }
-
-    // --- METODI PER LE API (Puliti e senza doppioni) ---
-
-    public async Task<IActionResult> OnGetSearchGenericAsync(string q, [FromServices] FitNova.Services.FoodService foodService)
-    {
-        if (string.IsNullOrWhiteSpace(q)) return new JsonResult(new { });
-        var json = await foodService.SearchGenericFood(q);
-        return Content(json, "application/json");
-    }
-
-    public async Task<IActionResult> OnGetBarcodeAsync(string bc, [FromServices] FitNova.Services.FoodService foodService)
-    {
-        if (string.IsNullOrWhiteSpace(bc)) return new JsonResult(new { });
-        var json = await foodService.SearchByBarcode(bc);
-        return Content(json, "application/json");
     }
 }

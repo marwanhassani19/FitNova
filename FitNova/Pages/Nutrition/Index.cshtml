@@ -13,7 +13,6 @@
 
 <div class="g2 mb24" style="align-items:start;">
 
-    <!-- ADD FOOD PANEL -->
     <div class="card">
         <div class="card-title">Aggiungi Alimento</div>
 
@@ -23,18 +22,14 @@
             <button class="tab-btn" onclick="switchTab('ai',this)">🤖 AI Coach</button>
         </div>
 
-        <!-- SEARCH -->
         <div id="panel-search">
             <div class="form-group">
-                <input id="searchInput" class="form-control" placeholder="Es: chicken, apple, rice..." onkeydown="if(event.key==='Enter')searchFood()" />
+                <input id="searchInput" class="form-control" placeholder="Es: pasta, pollo, mela..." onkeydown="if(event.key==='Enter')searchFood()" />
             </div>
-            <div style="display:flex;gap:8px;margin-bottom:12px;">
-                <button class="btn btn-primary btn-full" onclick="searchFood()">Cerca su OpenFoodFacts</button>
-            </div>
+            <button class="btn btn-primary btn-full" onclick="searchFood()" style="margin-bottom:12px;">Cerca su OpenFoodFacts</button>
             <div id="searchResults" class="search-results"></div>
         </div>
 
-        <!-- BARCODE -->
         <div id="panel-barcode" style="display:none;">
             <div style="text-align:center;padding:16px 0 20px;">
                 <div style="font-size:44px;margin-bottom:10px;">📷</div>
@@ -48,13 +43,12 @@
             <div id="barcodeResults" class="search-results" style="margin-top:10px;"></div>
         </div>
 
-        <!-- AI CHAT -->
         <div id="panel-ai" style="display:none;">
             <div class="chat-container">
                 <div class="chat-messages" id="chatMessages">
                     <div class="chat-msg">
                         <div class="chat-av ai">🤖</div>
-                        <div class="chat-bubble ai">Ciao! Descrivi cosa hai mangiato e ti aiuto a tracciarlo, oppure chiedimi consigli sulla tua dieta. 💪</div>
+                        <div class="chat-bubble ai">Ciao! Descrivi cosa hai mangiato e ti aiuto a tracciarlo. 💪</div>
                     </div>
                 </div>
                 <div class="chat-row">
@@ -64,7 +58,6 @@
             </div>
         </div>
 
-        <!-- HIDDEN ADD FORM -->
         <form method="post" asp-page-handler="AddFood" id="addForm" style="display:none;">
             <input type="hidden" name="foodName" id="hName" />
             <input type="hidden" name="calories" id="hCal" />
@@ -77,7 +70,6 @@
         </form>
     </div>
 
-    <!-- TODAY'S LOG -->
     <div class="card">
         <div class="card-title">Diario di Oggi</div>
 
@@ -97,7 +89,7 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">Pasto per il prossimo alimento</label>
+            <label class="form-label">Pasto</label>
             <select id="mealSelector" class="form-control" onchange="document.getElementById('hMeal').value=this.value">
                 <option value="colazione">🌅 Colazione</option>
                 <option value="pranzo" selected>☀️ Pranzo</option>
@@ -139,7 +131,7 @@
         else
         {
             <div style="text-align:center;padding:28px;color:var(--text-2);font-size:13px;">
-                Nessun alimento oggi. Usa il pannello a sinistra per aggiungerne.
+                Nessun alimento oggi.
             </div>
         }
     </div>
@@ -148,120 +140,112 @@
 @section Scripts {
     <script>
         function switchTab(name, btn) {
-          ['search','barcode','ai'].forEach(t => document.getElementById('panel-'+t).style.display = t===name ? '' : 'none');
-          document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
+            ['search','barcode','ai'].forEach(t => document.getElementById('panel-'+t).style.display = t===name ? '' : 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
         }
 
-        // RICERCA CIBI GENERICI (USDA API)
         async function searchFood() {
-          const q = document.getElementById('searchInput').value.trim();
-          if (!q) return;
-          const el = document.getElementById('searchResults');
-          el.innerHTML = '<div style="color:var(--text-2);font-size:13px;padding:8px;">Cerco nel database...</div>';
-          try {
-            const res = await fetch(`?handler=SearchGeneric&q=${encodeURIComponent(q)}`);
-            const data = await res.json();
-            renderUsdaItems(data.foods || [], el);
-          } catch {
-            el.innerHTML = '<div style="color:var(--red);font-size:13px;">Errore di rete.</div>';
-          }
+            const q = document.getElementById('searchInput').value.trim();
+            if (!q) return;
+            const el = document.getElementById('searchResults');
+            el.innerHTML = '<div style="color:var(--text-2);font-size:13px;padding:8px;">Cerco...</div>';
+            try {
+                const data = await fetch(`/Nutrition?handler=SearchFood&q=${encodeURIComponent(q)}`).then(r => r.json());
+                renderItems(data.products || [], el);
+            } catch {
+                el.innerHTML = '<div style="color:var(--red);font-size:13px;">Errore di rete.</div>';
+            }
         }
 
-        // RICERCA CODICE A BARRE (OpenFoodFacts API)
         async function searchBarcode() {
-          const bc = document.getElementById('barcodeInput').value.trim();
-          if (!bc) return;
-          const el = document.getElementById('barcodeResults');
-          el.innerHTML = '<div style="color:var(--text-2);font-size:13px;padding:8px;">Cerco prodotto...</div>';
-          try {
-            const res = await fetch(`?handler=Barcode&bc=${encodeURIComponent(bc)}`);
-            const data = await res.json();
-            if (data.status===1) renderOffItems([data.product], el);
-            else el.innerHTML = '<div style="color:var(--red);font-size:13px;">Prodotto non trovato.</div>';
-          } catch {
-            el.innerHTML = '<div style="color:var(--red);font-size:13px;">Errore di rete.</div>';
-          }
+            const bc = document.getElementById('barcodeInput').value.trim();
+            if (!bc) return;
+            const el = document.getElementById('barcodeResults');
+            el.innerHTML = '<div style="color:var(--text-2);font-size:13px;padding:8px;">Cerco...</div>';
+            try {
+                const data = await fetch(`/Nutrition?handler=Barcode&code=${encodeURIComponent(bc)}`).then(r => r.json());
+                if (data.status === 1) renderItems([data.product], el);
+                else el.innerHTML = '<div style="color:var(--red);font-size:13px;">Prodotto non trovato.</div>';
+            } catch {
+                el.innerHTML = '<div style="color:var(--red);font-size:13px;">Errore.</div>';
+            }
         }
 
-        // FORMATTATA PER USDA
-        function renderUsdaItems(foods, container) {
-          if (!foods.length) { container.innerHTML = '<div style="color:var(--text-2);font-size:13px;">Nessun risultato. Prova in inglese (es: "apple").</div>'; return; }
-          container.innerHTML = foods.slice(0,5).map(f => {
-            // Estrae i nutrienti dagli ID standard USDA
-            const getNut = (id) => { const n = f.foodNutrients.find(x => x.nutrientId === id); return n ? n.value : 0; };
-            const cal = Math.round(getNut(1008)); // Kcal
-            const pro = getNut(1003).toFixed(1);  // Proteine
-            const car = getNut(1005).toFixed(1);  // Carboidrati
-            const fat = getNut(1004).toFixed(1);  // Grassi
-            const nm  = (f.description||'').substring(0,44).replace(/'/g,"\\'");
-            return `<div class="search-item" onclick="addFood('${nm}',${cal},${pro},${car},${fat})">
-              <div class="search-item-name">${f.description}</div>
-              <div class="search-item-macros">
-                <span class="food-macro fm-p">P ${pro}g</span>
-                <span class="food-macro fm-c">C ${car}g</span>
-                <span class="food-macro fm-f">G ${fat}g</span>
-                <span style="margin-left:auto;font-size:13px;font-weight:700;color:var(--green)">${cal} kcal</span>
-              </div>
-            </div>`;
-          }).join('');
+              function renderItems(products, container) {
+            if (!products || !products.length) {
+                container.innerHTML = '<div style="color:var(--text-2);font-size:13px;">Nessun risultato.</div>';
+                return;
+            }
+            const valid = products.filter(p => p && (
+                p.product_name || p.product_name_it ||
+                p.product_name_en || p.abbreviated_product_name
+            ));
+            if (!valid.length) {
+                container.innerHTML = '<div style="color:var(--text-2);font-size:13px;">Nessun risultato.</div>';
+                return;
+            }
+            container.innerHTML = valid.slice(0, 6).map(p => {
+                const n    = p.nutriments || {};
+                const cal  = Math.round(
+                    n['energy-kcal_100g'] ||
+                    n['energy-kcal']      ||
+                    (n['energy_100g'] || 0) / 4.184 || 0
+                );
+                const pro  = parseFloat(n.proteins_100g  || n.proteins  || 0).toFixed(1);
+                const car  = parseFloat(n.carbohydrates_100g || n.carbohydrates || 0).toFixed(1);
+                const fat  = parseFloat(n.fat_100g || n.fat || 0).toFixed(1);
+                const name = (
+                    p.product_name    ||
+                    p.product_name_it ||
+                    p.product_name_en ||
+                    p.abbreviated_product_name ||
+                    'Prodotto'
+                );
+                const nm = name.substring(0, 50).replace(/'/g, "\\'");
+                return `<div class="search-item" onclick="addFood('${nm}',${cal},${pro},${car},${fat})">
+                    <div class="search-item-name">${name}</div>
+                    <div class="search-item-macros">
+                        <span class="food-macro fm-p">P ${pro}g</span>
+                        <span class="food-macro fm-c">C ${car}g</span>
+                        <span class="food-macro fm-f">G ${fat}g</span>
+                        <span style="margin-left:auto;font-size:13px;font-weight:700;color:var(--green)">${cal} kcal</span>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
-        // FORMATTATA PER OPENFOODFACTS
-        function renderOffItems(products, container) {
-          const valid = products.filter(p => p && p.product_name);
-          if (!valid.length) { container.innerHTML = '<div style="color:var(--text-2);font-size:13px;">Nessun risultato.</div>'; return; }
-          container.innerHTML = valid.slice(0,5).map(p => {
-            const n = p.nutriments || {};
-            const cal = Math.round(n['energy-kcal_100g'] || (n['energy_100g']||0)/4.184 || 0);
-            const pro = (n.proteins_100g||0).toFixed(1);
-            const car = (n.carbohydrates_100g||0).toFixed(1);
-            const fat = (n.fat_100g||0).toFixed(1);
-            const nm  = (p.product_name||'').substring(0,44).replace(/'/g,"\\'");
-            return `<div class="search-item" onclick="addFood('${nm}',${cal},${pro},${car},${fat})">
-              <div class="search-item-name">${p.product_name}</div>
-              <div class="search-item-macros">
-                <span class="food-macro fm-p">P ${pro}g</span>
-                <span class="food-macro fm-c">C ${car}g</span>
-                <span class="food-macro fm-f">G ${fat}g</span>
-                <span style="margin-left:auto;font-size:13px;font-weight:700;color:var(--green)">${cal} kcal</span>
-              </div>
-            </div>`;
-          }).join('');
+        function addFood(name, cal, pro, car, fat) {
+            document.getElementById('hName').value = name;
+            document.getElementById('hCal').value  = cal;
+            document.getElementById('hPro').value  = pro;
+            document.getElementById('hCarb').value = car;
+            document.getElementById('hFat').value  = fat;
+            document.getElementById('hMeal').value = document.getElementById('mealSelector').value;
+            document.getElementById('addForm').submit();
         }
 
-        function addFood(name,cal,pro,car,fat) {
-          document.getElementById('hName').value = name;
-          document.getElementById('hCal').value  = cal;
-          document.getElementById('hPro').value  = pro;
-          document.getElementById('hCarb').value = car;
-          document.getElementById('hFat').value  = fat;
-          document.getElementById('hMeal').value = document.getElementById('mealSelector').value;
-          document.getElementById('addForm').submit();
-        }
-
-        // IL CODICE DELLA CHAT AI RIMANE INVARIATO...
         async function sendChat() {
-          const inp = document.getElementById('chatInput');
-          const msg = inp.value.trim(); if (!msg) return;
-          inp.value = '';
-          const box = document.getElementById('chatMessages');
-          box.innerHTML += `<div class="chat-msg user"><div class="chat-av user">🧑</div><div class="chat-bubble user">${msg}</div></div>`;
-          const tid = 'tp_'+Date.now();
-          box.innerHTML += `<div class="chat-msg" id="${tid}"><div class="chat-av ai">🤖</div><div class="chat-bubble ai typing"><span></span><span></span><span></span></div></div>`;
-          box.scrollTop = box.scrollHeight;
-          try {
-            const res  = await fetch('/api/nutrition-chat', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg}) });
-            const data = await res.json();
-            document.getElementById(tid)?.remove();
-            box.innerHTML += `<div class="chat-msg"><div class="chat-av ai">🤖</div><div class="chat-bubble ai">${(data.reply||'').replace(/\n/g,'<br>')}</div></div>`;
-            if (data.food) addFood(data.food.name, data.food.calories, data.food.protein, data.food.carbs, data.food.fat);
-          } catch {
-            document.getElementById(tid)?.remove();
-            box.innerHTML += `<div class="chat-msg"><div class="chat-av ai">🤖</div><div class="chat-bubble ai" style="color:var(--red)">Errore di connessione.</div></div>`;
-          }
-          box.scrollTop = box.scrollHeight;
+            const inp = document.getElementById('chatInput');
+            const msg = inp.value.trim();
+            if (!msg) return;
+            inp.value = '';
+            const box = document.getElementById('chatMessages');
+            box.innerHTML += `<div class="chat-msg user"><div class="chat-av user">🧑</div><div class="chat-bubble user">${msg}</div></div>`;
+            const tid = 'tp_' + Date.now();
+            box.innerHTML += `<div class="chat-msg" id="${tid}"><div class="chat-av ai">🤖</div><div class="chat-bubble ai typing"><span></span><span></span><span></span></div></div>`;
+            box.scrollTop = box.scrollHeight;
+            try {
+                const res  = await fetch('/api/nutrition-chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg }) });
+                const data = await res.json();
+                document.getElementById(tid)?.remove();
+                box.innerHTML += `<div class="chat-msg"><div class="chat-av ai">🤖</div><div class="chat-bubble ai">${(data.reply || '').replace(/\n/g, '<br>')}</div></div>`;
+                if (data.food) addFood(data.food.name, data.food.calories, data.food.protein, data.food.carbs, data.food.fat);
+            } catch {
+                document.getElementById(tid)?.remove();
+                box.innerHTML += `<div class="chat-msg"><div class="chat-av ai">🤖</div><div class="chat-bubble ai" style="color:var(--red)">Errore.</div></div>`;
+            }
+            box.scrollTop = box.scrollHeight;
         }
     </script>
-}
 }

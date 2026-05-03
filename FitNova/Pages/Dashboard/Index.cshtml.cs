@@ -13,7 +13,8 @@ public class IndexModel : PageModel
     private readonly UserManager<ApplicationUser> _um;
     private readonly AppDbContext _db;
 
-    public IndexModel(UserManager<ApplicationUser> um, AppDbContext db) { _um = um; _db = db; }
+    public IndexModel(UserManager<ApplicationUser> um, AppDbContext db)
+    { _um = um; _db = db; }
 
     public float TodayCalories { get; set; }
     public float CalorieGoal { get; set; } = 2000;
@@ -34,7 +35,9 @@ public class IndexModel : PageModel
         var user = await _um.GetUserAsync(User);
         if (user == null) return;
 
-        var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+        var profile = await _db.UserProfiles
+            .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
         WeightKg = profile?.WeightKg ?? 0;
 
         if (profile != null)
@@ -76,7 +79,8 @@ public class IndexModel : PageModel
         for (int i = 6; i >= 0; i--)
         {
             var d = today.AddDays(-i);
-            WeightLabels.Add(d.ToString("ddd", new System.Globalization.CultureInfo("it-IT")));
+            WeightLabels.Add(d.ToString("ddd",
+                new System.Globalization.CultureInfo("it-IT")));
             WeightValues.Add(WeightKg > 0 ? WeightKg : 70f);
         }
     }

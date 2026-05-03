@@ -18,11 +18,11 @@ public class IndexModel : PageModel
     private readonly AppDbContext _db;
     private readonly GeminiService _gemini;
 
-    public IndexModel(UserManager<ApplicationUser> um, AppDbContext db, GeminiService gemini)
+    public IndexModel(UserManager<ApplicationUser> um,
+                      AppDbContext db, GeminiService gemini)
     { _um = um; _db = db; _gemini = gemini; }
 
-    [BindProperty]
-    public InputModel Input { get; set; } = new();
+    [BindProperty] public InputModel Input { get; set; } = new();
 
     public class InputModel
     {
@@ -44,7 +44,10 @@ public class IndexModel : PageModel
     {
         var user = await _um.GetUserAsync(User);
         if (user == null) return;
-        Profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+        Profile = await _db.UserProfiles
+            .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
         if (Profile != null)
         {
             Input.WeightKg = Profile.WeightKg;
@@ -63,8 +66,14 @@ public class IndexModel : PageModel
         var user = await _um.GetUserAsync(User);
         if (user == null) return RedirectToPage();
 
-        var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
-        if (profile == null) { profile = new UserProfile { UserId = user.Id }; _db.UserProfiles.Add(profile); }
+        var profile = await _db.UserProfiles
+            .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+        if (profile == null)
+        {
+            profile = new UserProfile { UserId = user.Id };
+            _db.UserProfiles.Add(profile);
+        }
 
         profile.WeightKg = Input.WeightKg;
         profile.HeightCm = Input.HeightCm;
@@ -79,7 +88,7 @@ public class IndexModel : PageModel
         Profile = profile;
         NutritionPlan = profile.NutritionPlan;
         FormattedPlan = FormatPlan(NutritionPlan ?? "");
-        Toast = "Profilo salvato con successo!";
+        Toast = "Profilo salvato!";
         return Page();
     }
 
@@ -88,7 +97,9 @@ public class IndexModel : PageModel
         var user = await _um.GetUserAsync(User);
         if (user == null) return RedirectToPage();
 
-        var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+        var profile = await _db.UserProfiles
+            .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
         if (profile == null)
         {
             Toast = "Salva prima il tuo profilo!";
@@ -100,59 +111,31 @@ public class IndexModel : PageModel
         var goalLabel = profile.Goal switch
         {
             "lose" => "perdita di peso",
-            "gain" => "aumento della massa muscolare",
+            "gain" => "aumento massa muscolare",
             "maintain" => "mantenimento del peso",
             _ => "benessere generale"
         };
-        var actLabel = profile.ActivityLevel switch
-        {
-            "sedentary" => "sedentario",
-            "light" => "leggermente attivo",
-            "moderate" => "moderatamente attivo",
-            "active" => "molto attivo",
-            _ => "moderato"
-        };
-        var genLabel = profile.Gender == "female" ? "donna" : "uomo";
 
-        var prompt = $@"Sei un nutrizionista professionista certificato. Crea un piano nutrizionale settimanale completo in italiano per:
-
-## Dati paziente
-- Sesso: {genLabel}
+        var prompt = $@"Sei un nutrizionista. Crea un piano nutrizionale settimanale in italiano per:
+- Sesso: {(profile.Gender == "female" ? "donna" : "uomo")}
 - Età: {profile.Age} anni
 - Peso: {profile.WeightKg} kg
 - Altezza: {profile.HeightCm} cm
 - Obiettivo: {goalLabel}
-- Livello attività: {actLabel}
+- Attività: {profile.ActivityLevel}
 
-## Struttura richiesta (segui ESATTAMENTE questo formato)
-
-**FABBISOGNO CALORICO GIORNALIERO**
-Calcola TDEE e calorie target.
-
-**MACRONUTRIENTI TARGET**
-- Proteine: X g (Y%)
-- Carboidrati: X g (Y%)
-- Grassi: X g (Y%)
-
-**PIANO SETTIMANALE**
-
+Formato:
+**CALORIE GIORNALIERE**
+**MACRONUTRIENTI**
 ### LUNEDÌ
 **Colazione:** ...
 **Pranzo:** ...
 **Cena:** ...
-**Spuntino:** ...
-*Totale: ~X kcal*
-
 ### MARTEDÌ
-[stesso formato per tutti i 7 giorni]
-
-**CONSIGLI PRATICI**
-3-4 consigli specifici per l'obiettivo.
-
-Sii specifico con le grammature (es: 80g pasta, 150g petto di pollo).";
+[tutti i 7 giorni]
+**CONSIGLI**";
 
         var raw = await _gemini.Ask(prompt);
-
         profile.NutritionPlan = raw;
         profile.UpdatedAt = DateTime.Now;
         await _db.SaveChangesAsync();
@@ -160,7 +143,7 @@ Sii specifico con le grammature (es: 80g pasta, 150g petto di pollo).";
         Profile = profile;
         NutritionPlan = raw;
         FormattedPlan = FormatPlan(raw);
-        Toast = "Piano generato con successo!";
+        Toast = "Piano generato!";
         return Page();
     }
 
@@ -194,7 +177,9 @@ Sii specifico con le grammature (es: 80g pasta, 150g petto di pollo).";
     }
 
     private static string Inline(string s) =>
-        Regex.Replace(Regex.Replace(Esc(s), @"\*\*(.+?)\*\*", "<strong>$1</strong>"), @"\*(.+?)\*", "<em>$1</em>");
+        Regex.Replace(
+            Regex.Replace(Esc(s), @"\*\*(.+?)\*\*", "<strong>$1</strong>"),
+            @"\*(.+?)\*", "<em>$1</em>");
 
     private static string Esc(string s) =>
         s.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");

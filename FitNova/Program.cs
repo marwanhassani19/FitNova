@@ -6,11 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DATABASE
 builder.Services.AddDbContext<AppDbContext>(o =>
-    o.UseSqlite("Data Source=fitnova.db"));
+    o.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// IDENTITY
 builder.Services.AddDefaultIdentity<ApplicationUser>(o =>
 {
     o.SignIn.RequireConfirmedAccount = false;
@@ -20,14 +18,12 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(o =>
 .AddRoles<IdentityRole>()
 .AddEntityFrameworkStores<AppDbContext>();
 
-// SERVICES
 builder.Services.AddHttpClient<GeminiService>();
 builder.Services.AddHttpClient<FoodService>();
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
-// MIGRATE + SEED
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -54,7 +50,6 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// MIDDLEWARE
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();

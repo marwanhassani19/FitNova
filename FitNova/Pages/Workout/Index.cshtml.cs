@@ -18,7 +18,8 @@ public class IndexModel : PageModel
     private readonly AppDbContext _db;
     private readonly GeminiService _gemini;
 
-    public IndexModel(UserManager<ApplicationUser> um, AppDbContext db, GeminiService gemini)
+    public IndexModel(UserManager<ApplicationUser> um,
+                      AppDbContext db, GeminiService gemini)
     { _um = um; _db = db; _gemini = gemini; }
 
     public string? WorkoutPlan { get; set; }
@@ -35,12 +36,18 @@ public class IndexModel : PageModel
         var user = await _um.GetUserAsync(User);
         if (user == null) return;
 
-        var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+        var profile = await _db.UserProfiles
+            .FirstOrDefaultAsync(p => p.UserId == user.Id);
+
         WorkoutPlan = profile?.WorkoutPlan;
         FormattedPlan = FormatWorkout(WorkoutPlan ?? "");
 
-        var weekStart = DateTime.Today.AddDays(-(((int)DateTime.Today.DayOfWeek + 6) % 7));
-        var logs = await _db.WorkoutLogs.Where(w => w.UserId == user.Id).ToListAsync();
+        var weekStart = DateTime.Today
+            .AddDays(-(((int)DateTime.Today.DayOfWeek + 6) % 7));
+
+        var logs = await _db.WorkoutLogs
+            .Where(w => w.UserId == user.Id)
+            .ToListAsync();
 
         TotalWorkouts = logs.Count;
         WorkoutsThisWeek = logs.Count(w => w.Date >= weekStart);
@@ -50,7 +57,8 @@ public class IndexModel : PageModel
 
         for (int i = 0; i < 30; i++)
         {
-            if (logs.Any(w => w.Date.Date == DateTime.Today.AddDays(-i))) Streak++;
+            if (logs.Any(w => w.Date.Date == DateTime.Today.AddDays(-i)))
+                Streak++;
             else break;
         }
     }
@@ -59,7 +67,9 @@ public class IndexModel : PageModel
     {
         var user = await _um.GetUserAsync(User);
         if (user == null) return RedirectToPage();
-        var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+
+        var profile = await _db.UserProfiles
+            .FirstOrDefaultAsync(p => p.UserId == user.Id);
 
         var goalLabel = (profile?.Goal) switch
         {
@@ -68,28 +78,15 @@ public class IndexModel : PageModel
             _ => "forma fisica generale"
         };
 
-        var prompt = $@"Sei un personal trainer certificato. Crea una scheda di allenamento settimanale in italiano per obiettivo: {goalLabel}.
-Dati atleta: Peso {profile?.WeightKg ?? 70}kg, Altezza {profile?.HeightCm ?? 170}cm, livello attività: {profile?.ActivityLevel ?? "moderate"}.
+        var prompt = $@"Sei un personal trainer. Crea una scheda settimanale in italiano per: {goalLabel}.
+Peso {profile?.WeightKg ?? 70}kg, Altezza {profile?.HeightCm ?? 170}cm.
 
-Formato ESATTO:
-
-**FREQUENZA E STRUTTURA**
-Breve intro su split e frequenza.
-
-### GIORNO 1 — NOME (es: PUSH — Petto/Spalle/Tricipiti)
-**Riscaldamento:** 5-10 min...
+### GIORNO 1 — NOME
 **Esercizi:**
-- Nome esercizio: X serie × X rip — recupero X min
-**Cool-down:** ...
-
+- Esercizio: X serie × X rip
 ### GIORNO 2 — NOME
-[stesso formato per ogni giorno]
-
-### GIORNI DI RIPOSO
-Cosa fare nei giorni off.
-
-**CONSIGLI CHIAVE**
-3-4 consigli su progressione e nutrizione peri-workout.";
+[tutti i giorni]
+**CONSIGLI**";
 
         var raw = await _gemini.Ask(prompt);
 
@@ -107,9 +104,14 @@ Cosa fare nei giorni off.
     {
         var user = await _um.GetUserAsync(User);
         if (user == null) return RedirectToPage();
-        _db.WorkoutLogs.Add(new WorkoutLog { UserId = user.Id, Date = DateTime.Now });
+
+        _db.WorkoutLogs.Add(new WorkoutLog
+        {
+            UserId = user.Id,
+            Date = DateTime.Now
+        });
         await _db.SaveChangesAsync();
-        Toast = "Allenamento registrato! Ottimo lavoro 💪";
+        Toast = "Allenamento registrato! 💪";
         await OnGetAsync();
         return Page();
     }
@@ -144,7 +146,9 @@ Cosa fare nei giorni off.
     }
 
     private static string Inline(string s) =>
-        Regex.Replace(Regex.Replace(Esc(s), @"\*\*(.+?)\*\*", "<strong>$1</strong>"), @"\*(.+?)\*", "<em>$1</em>");
+        Regex.Replace(
+            Regex.Replace(Esc(s), @"\*\*(.+?)\*\*", "<strong>$1</strong>"),
+            @"\*(.+?)\*", "<em>$1</em>");
 
     private static string Esc(string s) =>
         s.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");

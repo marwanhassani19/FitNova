@@ -7,7 +7,7 @@ namespace FitNova.Services;
 public class FoodService
 {
     private readonly HttpClient _http;
-    private readonly string _usdaApiKey = "wbm3UTzh8aLYNV0vR7iUcS18FIqEj9Xlytxv8QBj";
+    private readonly string _usdaApiKey = "IhfDrgLw5Xr5aNALRWrS8j046Czg3DezWbCLI0nI";
 
     public FoodService(HttpClient http)
     {
