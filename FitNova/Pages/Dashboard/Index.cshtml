@@ -1,0 +1,166 @@
+﻿@page
+@model FitNova.Pages.Dashboard.IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+@{
+    var username = (User.Identity?.Name ?? "").Split('@')[0];
+    var pct = Model.CalorieGoal > 0 ? (int)Math.Min(100, Model.TodayCalories / Model.CalorieGoal * 100) : 0;
+    var greeting = DateTime.Now.Hour < 12 ? "Buongiorno" : DateTime.Now.Hour < 18 ? "Buon pomeriggio" : "Buonasera";
+}
+
+<div class="page-top">
+    <div>
+        <div class="page-title">@greeting, <span class="hi">@username</span> 👋</div>
+        <div class="page-subtitle">@DateTime.Now.ToString("dddd d MMMM yyyy", new System.Globalization.CultureInfo("it-IT"))</div>
+    </div>
+    <a href="/Nutrition" class="btn btn-primary">+ Aggiungi Alimento</a>
+</div>
+
+<!-- STAT CARDS -->
+<div class="g4 mb24">
+    <div class="stat-card">
+        <div class="stat-icon si-green">🔥</div>
+        <div>
+            <div class="stat-num c-green">@((int)Model.TodayCalories) <span style="font-size:14px;color:var(--text-2);font-weight:400;">/ @((int)Model.CalorieGoal)</span></div>
+            <div class="stat-lbl">Calorie oggi</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon si-blue">⚖️</div>
+        <div>
+            <div class="stat-num c-blue">@(Model.WeightKg > 0 ? Model.WeightKg.ToString("F1") + " kg" : "—")</div>
+            <div class="stat-lbl">Peso attuale</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon si-orange">🏋️</div>
+        <div>
+            <div class="stat-num c-orange">@Model.WorkoutsThisWeek</div>
+            <div class="stat-lbl">Workout questa settimana</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon si-purple">🎯</div>
+        <div>
+            <div class="stat-num c-purple">@(Model.GoalLabel)</div>
+            <div class="stat-lbl">Obiettivo</div>
+        </div>
+    </div>
+</div>
+
+<!-- CHARTS ROW -->
+<div class="g2 mb24">
+
+    <!-- CALORIES + MACROS -->
+    <div class="card">
+        <div class="card-title">Calorie & Macronutrienti</div>
+
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:16px;">
+            <span class="card-value c-green">@((int)Model.TodayCalories)</span>
+            <span class="c-muted" style="font-size:14px;">/ @((int)Model.CalorieGoal) kcal</span>
+        </div>
+
+        <div class="prog-wrap mb16">
+            <div class="prog-row"><span>Progresso giornaliero</span><span>@pct%</span></div>
+            <div class="prog-bg"><div class="prog-fill pf-green" style="width:@pct%"></div></div>
+        </div>
+
+        <div class="ring-layout">
+            <svg class="ring-svg" width="90" height="90" viewBox="0 0 90 90">
+                @{
+                    double r2 = 36; double circ = 2 * Math.PI * r2;
+                    double protPct = Model.TotalMacroKcal > 0 ? Model.TodayProtein * 4 / Model.TotalMacroKcal : 0;
+                    double carbPct = Model.TotalMacroKcal > 0 ? Model.TodayCarbs * 4 / Model.TotalMacroKcal : 0;
+                    double fatPct = Model.TotalMacroKcal > 0 ? Model.TodayFat * 9 / Model.TotalMacroKcal : 0;
+                    double protLen = protPct * circ; double carbLen = carbPct * circ; double fatLen = fatPct * circ;
+                    double protOff = 0; double carbOff = -protLen; double fatOff = -(protLen + carbLen);
+                }
+                <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="9" />
+                <circle cx="45" cy="45" r="36" fill="none" stroke="var(--green)" stroke-width="9" stroke-dasharray="@protLen.ToString("F1") @circ.ToString("F1")" stroke-dashoffset="@protOff.ToString("F1")" stroke-linecap="round" />
+                <circle cx="45" cy="45" r="36" fill="none" stroke="var(--blue)" stroke-width="9" stroke-dasharray="@carbLen.ToString("F1") @circ.ToString("F1")" stroke-dashoffset="@carbOff.ToString("F1")" stroke-linecap="round" />
+                <circle cx="45" cy="45" r="36" fill="none" stroke="var(--orange)" stroke-width="9" stroke-dasharray="@fatLen.ToString("F1") @circ.ToString("F1")" stroke-dashoffset="@fatOff.ToString("F1")" stroke-linecap="round" />
+            </svg>
+            <div class="ring-legend">
+                <div class="ring-item">
+                    <div class="ring-dot" style="background:var(--green)"></div>
+                    <span class="ring-lbl">Proteine</span>
+                    <span class="ring-val c-green">@((int)Model.TodayProtein) g</span>
+                </div>
+                <div class="ring-item">
+                    <div class="ring-dot" style="background:var(--blue)"></div>
+                    <span class="ring-lbl">Carboidrati</span>
+                    <span class="ring-val c-blue">@((int)Model.TodayCarbs) g</span>
+                </div>
+                <div class="ring-item">
+                    <div class="ring-dot" style="background:var(--orange)"></div>
+                    <span class="ring-lbl">Grassi</span>
+                    <span class="ring-val c-orange">@((int)Model.TodayFat) g</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WEIGHT CHART -->
+    <div class="card">
+        <div class="card-title">Andamento Peso — Ultimi 7 gg</div>
+        <canvas id="weightChart" height="200"></canvas>
+    </div>
+</div>
+
+<!-- FOOD LOG TODAY -->
+<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div class="card-title" style="margin:0;">Diario Alimentare — Oggi</div>
+        <a href="/Nutrition" class="btn btn-ghost btn-sm">Gestisci →</a>
+    </div>
+
+    @if (Model.TodayLogs.Any())
+    {
+        foreach (var log in Model.TodayLogs.Take(6))
+        {
+            <div class="food-row">
+                <div class="food-icon">🍽️</div>
+                <div style="flex:1;">
+                    <div class="food-name">@log.FoodItem?.Name</div>
+                    <div class="food-meal">@log.MealType • @(log.Quantity)× 100g</div>
+                </div>
+                <span class="food-macro fm-p">P @((int)((log.FoodItem?.Protein ?? 0) * log.Quantity))g</span>
+                <span class="food-macro fm-c">C @((int)((log.FoodItem?.Carbs ?? 0) * log.Quantity))g</span>
+                <span class="food-macro fm-f">G @((int)((log.FoodItem?.Fat ?? 0) * log.Quantity))g</span>
+                <div class="food-kcal">@((int)((log.FoodItem?.Calories ?? 0) * log.Quantity)) kcal</div>
+            </div>
+        }
+    }
+    else
+    {
+        <div style="text-align:center;padding:28px;color:var(--text-2);font-size:13px;">
+            Nessun alimento registrato oggi. <a href="/Nutrition" class="auth-link">Inizia a tracciare →</a>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        new Chart(document.getElementById('weightChart'), {
+          type: 'line',
+          data: {
+            labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeightLabels)),
+            datasets: [{
+              data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeightValues)),
+              borderColor: '#22d672', backgroundColor: 'rgba(34,214,114,0.06)',
+              borderWidth: 2, pointBackgroundColor: '#22d672', pointRadius: 4, tension: 0.4, fill: true
+            }]
+          },
+          options: {
+            responsive: true, plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#5c6278', font: { family:'Inter', size:11 } } },
+              y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#5c6278', font: { family:'Inter', size:11 } } }
+            }
+          }
+        });
+    </script>
+}
