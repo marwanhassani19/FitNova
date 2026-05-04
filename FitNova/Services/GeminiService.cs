@@ -1,66 +1,54 @@
-﻿using System.Text;
+using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace FitNova.Services
+namespace FitNova.Services;
+
+public class GeminiService
 {
-    public class GeminiService
+    private readonly HttpClient _http;
+    private readonly IConfiguration _config;
+
+    public GeminiService(HttpClient http, IConfiguration config)
     {
-        private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
+        _http = http;
+        _config = config;
+    }
 
-        public GeminiService(HttpClient httpClient, string apiKey)
+    public async Task<string> Ask(string prompt)
+    {
+        var key = _config["Gemini:ApiKey"];
+        if (string.IsNullOrWhiteSpace(key))
+            return "⚠️ Chiave API Gemini non configurata in appsettings.json → Gemini:ApiKey";
+
+        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={key}";
+        var body = new
         {
-            _httpClient = httpClient;
-            _apiKey = apiKey;
+            contents = new[] { new { parts = new[] { new { text = prompt } } } }
+        };
+
+        try
+        {
+            var res = await _http.PostAsJsonAsync(url, body);
+            var json = await res.Content.ReadAsStringAsync();
+
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("error", out var err))
+                return $"⚠️ Errore Gemini: {err.GetProperty("message").GetString()}";
+
+            var text = root
+                .GetProperty("candidates")[0]
+                .GetProperty("content")
+                .GetProperty("parts")[0]
+                .GetProperty("text")
+                .GetString() ?? "Risposta vuota.";
+
+            return text;
         }
-
-        public async Task<string> Ask(string prompt)
+        catch (Exception ex)
         {
-            // URL CORRETTO E AGGIORNATO (Versione v1beta + gemini-1.5-flash)
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={_apiKey}";
-
-            var requestBody = new
-            {
-                contents = new[]
-                {
-                    new {
-                        parts = new[] { new { text = prompt } }
-                    }
-                }
-            };
-
-            try
-            {
-                var json = JsonSerializer.Serialize(requestBody);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var response = await _httpClient.PostAsync(url, content);
-                var responseString = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    // Questo ti aiuterà a capire se il problema è la chiave (403) o l'URL (404)
-                    return $"Errore API ({response.StatusCode}): {responseString}";
-                }
-
-                using var doc = JsonDocument.Parse(responseString);
-
-                // Parsing sicuro del JSON di Google
-                if (doc.RootElement.TryGetProperty("candidates", out var candidates) &&
-                    candidates.GetArrayLength() > 0 &&
-                    candidates[0].TryGetProperty("content", out var contentObj) &&
-                    contentObj.TryGetProperty("parts", out var parts) &&
-                    parts.GetArrayLength() > 0)
-                {
-                    return parts[0].GetProperty("text").GetString() ?? "L'AI ha risposto senza testo.";
-                }
-
-                return "Formato risposta AI non riconosciuto.";
-            }
-            catch (Exception ex)
-            {
-                return $"Errore di sistema: {ex.Message}";
-            }
+            return $"⚠️ Errore di connessione: {ex.Message}";
         }
     }
 }
